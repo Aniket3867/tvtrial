@@ -4,9 +4,9 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Social Media Feed</title>
-    <link rel="stylesheet" href="styles.css">
     <link href="https://fonts.googleapis.com/css2?family=Roboto:wght@400;700&display=swap" rel="stylesheet">
     <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.15.4/css/all.min.css" rel="stylesheet">
+    <link rel="stylesheet" href="styles.css">
 </head>
 <body>
     <nav class="navbar">
@@ -16,22 +16,22 @@
             <a href="#" onclick="setPlatform('x')">X (Twitter)</a>
             <a href="#" onclick="setPlatform('rss')">RSS</a>
         </div>
-        <a href="javascript:void(0);" class="icon" onclick="toggleNav()">
-            &#9776;
-        </a>
+        <button class="icon" onclick="toggleNav()">&#9776;</button>
     </nav>
-    <div class="container">
-        <div class="header">
+
+    <main class="container">
+        <header class="header">
             <h1 id="platform-title">🔔 Updates</h1>
             <div class="filter-container">
                 <input type="text" id="search" placeholder="Search messages...">
             </div>
-        </div>
-        <div id="messages-container" class="messages-container">
+        </header>
+
+        <section id="messages-container" class="messages-container">
             <div id="messages"></div>
             <div id="loader" class="loader">Loading...</div>
-        </div>
-    </div>
+        </section>
+    </main>
 
     <script>
         const TELEGRAM_API_URL = `https://api.telegram.org/bot6574547268:AAHP9CO9sXIoUf7w-ICPDp1a_MbtoJ8GJv4/getUpdates`;
@@ -43,7 +43,6 @@
 
         function fetchMessages(platform = 'x', query = '') {
             if (isLoading) return;
-
             isLoading = true;
             document.getElementById('loader').style.display = 'block';
 
@@ -197,26 +196,31 @@
 </html>
 
 <style>
+    * {
+        margin: 0;
+        padding: 0;
+        box-sizing: border-box;
+    }
     body {
         font-family: 'Roboto', sans-serif;
         background-color: #f4f4f9;
-        margin: 0;
-        padding: 0;
+        color: #333;
     }
     .navbar {
         display: flex;
         justify-content: space-between;
         align-items: center;
         background-color: #333;
+        color: white;
         padding: 10px 20px;
-        color: #fff;
+        box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
     }
     .nav-links {
         display: flex;
         gap: 15px;
     }
     .nav-links a {
-        color: #fff;
+        color: white;
         text-decoration: none;
         font-size: 16px;
         transition: color 0.3s ease;
@@ -226,37 +230,59 @@
     }
     .icon {
         display: none;
+        background-color: transparent;
+        border: none;
+        color: white;
+        font-size: 24px;
+        cursor: pointer;
     }
     .container {
         padding: 20px;
-        max-width: 800px;
-        margin: auto;
-        background-color: #fff;
+        max-width: 1000px;
+        margin: 0 auto;
+        background-color: white;
         border-radius: 10px;
-        box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+        box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
     }
     .header {
         display: flex;
         justify-content: space-between;
         align-items: center;
+        margin-bottom: 20px;
     }
     h1 {
+        font-size: 24px;
         color: #333;
-        margin: 0;
     }
     .filter-container {
-        display: flex;
-        align-items: center;
-        background-color: #f4f4f9;
-        padding: 5px 10px;
+        width: 250px;
+    }
+    .filter-container input {
+        width: 100%;
+        padding: 8px;
         border-radius: 5px;
+        border: 1px solid #ccc;
+    }
+    .messages-container {
+        max-height: 400px;
+        overflow-y: auto;
     }
     .message {
+        display: flex;
         background-color: #fff;
-        padding: 10px;
-        border-radius: 10px;
+        padding: 15px;
         margin-bottom: 10px;
+        border-radius: 10px;
         box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+    }
+    .message img {
+        width: 50px;
+        height: 50px;
+        border-radius: 50%;
+        margin-right: 15px;
+    }
+    .message-text {
+        flex: 1;
     }
     .message-actions {
         margin-top: 10px;
@@ -264,8 +290,26 @@
         gap: 10px;
     }
     .loader {
-        display: none;
+        text-align: center;
         font-size: 18px;
         color: #333;
+    }
+
+    @media (max-width: 768px) {
+        .navbar {
+            flex-direction: column;
+        }
+        .nav-links {
+            display: none;
+            flex-direction: column;
+            gap: 10px;
+            margin-top: 10px;
+        }
+        .icon {
+            display: block;
+        }
+        .container {
+            padding: 10px;
+        }
     }
 </style>
