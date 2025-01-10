@@ -1,0 +1,110 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Social Media Feed</title>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css">
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0-alpha1/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link rel="stylesheet" href="styles.css">
+    <script defer src="https://cdn.jsdelivr.net/npm/react/umd/react.development.js"></script>
+    <script defer src="https://cdn.jsdelivr.net/npm/react-dom/umd/react-dom.development.js"></script>
+    <script defer src="https://cdn.jsdelivr.net/npm/babel-standalone/babel.min.js"></script>
+</head>
+<body>
+    <div id="root"></div>
+
+    <script type="text/babel">
+        const { useState, useEffect } = React;
+
+        function App() {
+            const [currentPlatform, setCurrentPlatform] = useState('telegram');
+            const [searchQuery, setSearchQuery] = useState('');
+            const [messages, setMessages] = useState([]);
+            const [isLoading, setIsLoading] = useState(false);
+
+            const telegramChannel = "https://t.me/UXUYen2";
+
+            useEffect(() => {
+                fetchMessages();
+            }, [currentPlatform, searchQuery]);
+
+            const fetchMessages = async () => {
+                setIsLoading(true);
+                let fetchedMessages = [];
+
+                try {
+                    if (currentPlatform === 'telegram') {
+                        const response = await fetch(`https://api.telegram.org/bot6574547268:AAHP9CO9sXIoUf7w-ICPDp1a_MbtoJ8GJv4/getUpdates`);
+                        const data = await response.json();
+                        fetchedMessages = data.result.filter(msg => (msg.message?.text || '').toLowerCase().includes(searchQuery.toLowerCase()));
+                    } else if (currentPlatform === 'x') {
+                        // Add Twitter feed logic (mocked here for demo)
+                        fetchedMessages = [{ text: `Search: ${searchQuery} in X`, user: "@demo" }];
+                    } else if (currentPlatform === 'rss') {
+                        fetchedMessages = [{ text: `RSS feed entry matching ${searchQuery}` }];
+                    }
+                } catch (error) {
+                    console.error("Error fetching messages:", error);
+                } finally {
+                    setMessages(fetchedMessages);
+                    setIsLoading(false);
+                }
+            };
+
+            const renderMessages = () => {
+                if (isLoading) return <div className="spinner-border text-primary" role="status"><span className="visually-hidden">Loading...</span></div>;
+
+                return messages.length > 0 ? (
+                    <ul className="list-group">
+                        {messages.map((msg, index) => (
+                            <li key={index} className="list-group-item d-flex justify-content-between align-items-center">
+                                {msg.text || msg.message?.text || "No Content"}
+                                <span className="badge bg-primary rounded-pill">{msg.user || "Telegram"}</span>
+                            </li>
+                        ))}
+                    </ul>
+                ) : (
+                    <p className="text-muted">No messages found.</p>
+                );
+            };
+
+            return (
+                <div className="container py-4">
+                    <h1 className="text-center">📢 Social Media Feed</h1>
+                    <div className="d-flex justify-content-center mb-4">
+                        <button className={`btn ${currentPlatform === 'telegram' ? 'btn-primary' : 'btn-outline-primary'} mx-1`} onClick={() => setCurrentPlatform('telegram')}>Telegram</button>
+                        <button className={`btn ${currentPlatform === 'x' ? 'btn-primary' : 'btn-outline-primary'} mx-1`} onClick={() => setCurrentPlatform('x')}>X</button>
+                        <button className={`btn ${currentPlatform === 'rss' ? 'btn-primary' : 'btn-outline-primary'} mx-1`} onClick={() => setCurrentPlatform('rss')}>RSS</button>
+                    </div>
+
+                    <input type="text" className="form-control mb-4" placeholder="Search messages..." value={searchQuery} onChange={e => setSearchQuery(e.target.value)} />
+
+                    <div className="message-container">
+                        {renderMessages()}
+                    </div>
+                </div>
+            );
+        }
+
+        ReactDOM.render(<App />, document.getElementById('root'));
+    </script>
+
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            background-color: #f8f9fa;
+            margin: 0;
+            padding: 0;
+        }
+        .message-container {
+            max-height: 500px;
+            overflow-y: auto;
+            padding: 1rem;
+            background: #fff;
+            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+            border-radius: 10px;
+        }
+    </style>
+</body>
+</html>
