@@ -4,107 +4,268 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Social Media Feed</title>
-    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css">
-    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0-alpha1/dist/css/bootstrap.min.css" rel="stylesheet">
     <link rel="stylesheet" href="styles.css">
-    <script defer src="https://cdn.jsdelivr.net/npm/react/umd/react.development.js"></script>
-    <script defer src="https://cdn.jsdelivr.net/npm/react-dom/umd/react-dom.development.js"></script>
-    <script defer src="https://cdn.jsdelivr.net/npm/babel-standalone/babel.min.js"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Roboto:wght@400;700&display=swap" rel="stylesheet">
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.15.4/css/all.min.css" rel="stylesheet">
 </head>
 <body>
-    <div id="root"></div>
+    <nav class="navbar">
+        <div class="nav-brand">📢 Social Media Feed</div>
+        <div class="nav-links" id="navLinks">
+            <a href="#" onclick="setPlatform('telegram')">Telegram</a>
+            <a href="#" onclick="setPlatform('x')">X (Twitter)</a>
+            <a href="#" onclick="setPlatform('rss')">RSS</a>
+        </div>
+        <a href="javascript:void(0);" class="icon" onclick="toggleNav()">
+            &#9776;
+        </a>
+    </nav>
+    <div class="container">
+        <div class="header">
+            <h1 id="platform-title">🔔 Updates</h1>
+            <div class="filter-container">
+                <input type="text" id="search" placeholder="Search messages...">
+            </div>
+        </div>
+        <div id="messages-container" class="messages-container">
+            <div id="messages"></div>
+            <div id="loader" class="loader">Loading...</div>
+        </div>
+    </div>
 
-    <script type="text/babel">
-        const { useState, useEffect } = React;
+    <script>
+        const TELEGRAM_API_URL = `https://api.telegram.org/bot6574547268:AAHP9CO9sXIoUf7w-ICPDp1a_MbtoJ8GJv4/getUpdates`;
+        const X_API_URL = `https://api.twitter.com/1.1/search/tweets.json?q=bitcoin%20OR%20eth%20OR%20crypto&count=10`;
+        const CHANNEL_USERNAMES = ['UXUYen2'];  // Example Telegram username
 
-        function App() {
-            const [currentPlatform, setCurrentPlatform] = useState('telegram');
-            const [searchQuery, setSearchQuery] = useState('');
-            const [messages, setMessages] = useState([]);
-            const [isLoading, setIsLoading] = useState(false);
+        let isLoading = false;
+        let currentPlatform = 'telegram';
 
-            const telegramChannel = "https://t.me/UXUYen2";
+        function fetchMessages(platform = 'x', query = '') {
+            if (isLoading) return;
 
-            useEffect(() => {
-                fetchMessages();
-            }, [currentPlatform, searchQuery]);
+            isLoading = true;
+            document.getElementById('loader').style.display = 'block';
 
-            const fetchMessages = async () => {
-                setIsLoading(true);
-                let fetchedMessages = [];
-
-                try {
-                    if (currentPlatform === 'telegram') {
-                        const response = await fetch(`https://api.telegram.org/bot6574547268:AAHP9CO9sXIoUf7w-ICPDp1a_MbtoJ8GJv4/getUpdates`);
-                        const data = await response.json();
-                        fetchedMessages = data.result.filter(msg => (msg.message?.text || '').toLowerCase().includes(searchQuery.toLowerCase()));
-                    } else if (currentPlatform === 'x') {
-                        // Add Twitter feed logic (mocked here for demo)
-                        fetchedMessages = [{ text: `Search: ${searchQuery} in X`, user: "@demo" }];
-                    } else if (currentPlatform === 'rss') {
-                        fetchedMessages = [{ text: `RSS feed entry matching ${searchQuery}` }];
+            let apiUrl = getApiUrl(platform);
+            fetch(`${apiUrl}`)
+                .then(response => response.json())
+                .then(data => {
+                    if (platform === 'x') {
+                        displayMessages(data.statuses, platform, query);
+                    } else if (platform === 'telegram') {
+                        displayMessages(data.result, platform, query);
+                    } else {
+                        displayRSSMessages(data, query);
                     }
-                } catch (error) {
-                    console.error("Error fetching messages:", error);
-                } finally {
-                    setMessages(fetchedMessages);
-                    setIsLoading(false);
+                    isLoading = false;
+                    document.getElementById('loader').style.display = 'none';
+                })
+                .catch(error => {
+                    console.error('Error fetching messages:', error);
+                    isLoading = false;
+                    document.getElementById('loader').style.display = 'none';
+                });
+        }
+
+        function getApiUrl(platform) {
+            if (platform === 'telegram') {
+                return TELEGRAM_API_URL;
+            } else if (platform === 'x') {
+                return X_API_URL;
+            }
+            return '';  // Placeholder for RSS or other sources
+        }
+
+        function displayMessages(messages, platform, query) {
+            const messagesContainer = document.getElementById('messages');
+            messagesContainer.innerHTML = '';  // Clear previous messages
+            messages.forEach(msg => {
+                if (isRelevantMessage(msg, platform, query)) {
+                    const messageElement = document.createElement('div');
+                    messageElement.classList.add('message');
+
+                    const avatar = document.createElement('img');
+                    avatar.src = 'https://via.placeholder.com/50';
+                    avatar.alt = 'Avatar';
+
+                    const messageText = document.createElement('div');
+                    messageText.classList.add('message-text');
+                    messageText.textContent = platform === 'telegram' ? msg.message.text : msg.text;
+
+                    const actions = document.createElement('div');
+                    actions.classList.add('message-actions');
+                    actions.innerHTML = `
+                        <button onclick="likeMessage()">👍</button>
+                        <button onclick="shareMessage()">🔗</button>
+                        <button onclick="commentMessage()">💬</button>
+                    `;
+
+                    messageElement.appendChild(avatar);
+                    messageElement.appendChild(messageText);
+                    messageElement.appendChild(actions);
+                    messagesContainer.appendChild(messageElement);
                 }
-            };
-
-            const renderMessages = () => {
-                if (isLoading) return <div className="spinner-border text-primary" role="status"><span className="visually-hidden">Loading...</span></div>;
-
-                return messages.length > 0 ? (
-                    <ul className="list-group">
-                        {messages.map((msg, index) => (
-                            <li key={index} className="list-group-item d-flex justify-content-between align-items-center">
-                                {msg.text || msg.message?.text || "No Content"}
-                                <span className="badge bg-primary rounded-pill">{msg.user || "Telegram"}</span>
-                            </li>
-                        ))}
-                    </ul>
-                ) : (
-                    <p className="text-muted">No messages found.</p>
-                );
-            };
-
-            return (
-                <div className="container py-4">
-                    <h1 className="text-center">📢 Social Media Feed</h1>
-                    <div className="d-flex justify-content-center mb-4">
-                        <button className={`btn ${currentPlatform === 'telegram' ? 'btn-primary' : 'btn-outline-primary'} mx-1`} onClick={() => setCurrentPlatform('telegram')}>Telegram</button>
-                        <button className={`btn ${currentPlatform === 'x' ? 'btn-primary' : 'btn-outline-primary'} mx-1`} onClick={() => setCurrentPlatform('x')}>X</button>
-                        <button className={`btn ${currentPlatform === 'rss' ? 'btn-primary' : 'btn-outline-primary'} mx-1`} onClick={() => setCurrentPlatform('rss')}>RSS</button>
-                    </div>
-
-                    <input type="text" className="form-control mb-4" placeholder="Search messages..." value={searchQuery} onChange={e => setSearchQuery(e.target.value)} />
-
-                    <div className="message-container">
-                        {renderMessages()}
-                    </div>
-                </div>
-            );
+            });
         }
 
-        ReactDOM.render(<App />, document.getElementById('root'));
+        function displayRSSMessages(feed, query) {
+            const parser = new DOMParser();
+            const xml = parser.parseFromString(feed, "application/xml");
+            const items = xml.querySelectorAll("item");
+            const messagesContainer = document.getElementById('messages');
+            messagesContainer.innerHTML = '';  // Clear previous messages
+
+            items.forEach(item => {
+                if (item.querySelector("title").textContent.toLowerCase().includes(query.toLowerCase())) {
+                    const messageElement = document.createElement('div');
+                    messageElement.classList.add('message');
+
+                    const avatar = document.createElement('img');
+                    avatar.src = 'https://via.placeholder.com/50';
+                    avatar.alt = 'Avatar';
+
+                    const messageText = document.createElement('div');
+                    messageText.classList.add('message-text');
+                    messageText.textContent = item.querySelector("title").textContent;
+
+                    const actions = document.createElement('div');
+                    actions.classList.add('message-actions');
+                    actions.innerHTML = `
+                        <button onclick="likeMessage()">👍</button>
+                        <button onclick="shareMessage()">🔗</button>
+                        <button onclick="commentMessage()">💬</button>
+                    `;
+
+                    messageElement.appendChild(avatar);
+                    messageElement.appendChild(messageText);
+                    messageElement.appendChild(actions);
+                    messagesContainer.appendChild(messageElement);
+                }
+            });
+        }
+
+        function isRelevantMessage(msg, platform, query) {
+            const text = platform === 'telegram' ? msg.message.text.toLowerCase() : msg.text.toLowerCase();
+            const matchesQuery = text.includes(query.toLowerCase());
+            return matchesQuery;
+        }
+
+        function likeMessage() {
+            alert('You liked this message!');
+        }
+
+        function shareMessage() {
+            alert('You shared this message!');
+        }
+
+        function commentMessage() {
+            alert('You commented on this message!');
+        }
+
+        function setPlatform(platform) {
+            currentPlatform = platform;
+            document.getElementById('platform-title').innerText = `🔔 Updates from ${platform.charAt(0).toUpperCase() + platform.slice(1)}`;
+            fetchMessages(platform, document.getElementById('search').value);
+        }
+
+        function toggleNav() {
+            var navLinks = document.getElementById("navLinks");
+            if (navLinks.style.display === "block") {
+                navLinks.style.display = "none";
+            } else {
+                navLinks.style.display = "block";
+            }
+        }
+
+        document.getElementById('search').addEventListener('input', (e) => {
+            const query = e.target.value;
+            fetchMessages(currentPlatform, query);
+        });
+
+        document.getElementById('messages-container').addEventListener('scroll', () => {
+            const container = document.getElementById('messages-container');
+            if (container.scrollTop + container.clientHeight >= container.scrollHeight - 10 && !isLoading) {
+                fetchMessages(currentPlatform, document.getElementById('search').value);
+            }
+        });
+
+        // Initial fetch
+        fetchMessages();
     </script>
-
-    <style>
-        body {
-            font-family: Arial, sans-serif;
-            background-color: #f8f9fa;
-            margin: 0;
-            padding: 0;
-        }
-        .message-container {
-            max-height: 500px;
-            overflow-y: auto;
-            padding: 1rem;
-            background: #fff;
-            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
-            border-radius: 10px;
-        }
-    </style>
 </body>
 </html>
+
+<style>
+    body {
+        font-family: 'Roboto', sans-serif;
+        background-color: #f4f4f9;
+        margin: 0;
+        padding: 0;
+    }
+    .navbar {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        background-color: #333;
+        padding: 10px 20px;
+        color: #fff;
+    }
+    .nav-links {
+        display: flex;
+        gap: 15px;
+    }
+    .nav-links a {
+        color: #fff;
+        text-decoration: none;
+        font-size: 16px;
+        transition: color 0.3s ease;
+    }
+    .nav-links a:hover {
+        color: #ff6347;
+    }
+    .icon {
+        display: none;
+    }
+    .container {
+        padding: 20px;
+        max-width: 800px;
+        margin: auto;
+        background-color: #fff;
+        border-radius: 10px;
+        box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+    }
+    .header {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+    }
+    h1 {
+        color: #333;
+        margin: 0;
+    }
+    .filter-container {
+        display: flex;
+        align-items: center;
+        background-color: #f4f4f9;
+        padding: 5px 10px;
+        border-radius: 5px;
+    }
+    .message {
+        background-color: #fff;
+        padding: 10px;
+        border-radius: 10px;
+        margin-bottom: 10px;
+        box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+    }
+    .message-actions {
+        margin-top: 10px;
+        display: flex;
+        gap: 10px;
+    }
+    .loader {
+        display: none;
+        font-size: 18px;
+        color: #333;
+    }
+</style>
